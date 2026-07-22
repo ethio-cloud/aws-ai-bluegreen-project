@@ -1,0 +1,12 @@
+{
+  "applicationName": "ai-support-codedeploy-app",
+  "deploymentGroupName": "ai-support-deployment-group",
+  "deploymentConfigName": "CodeDeployDefault.ECSAllAtOnce",
+  "description": "Deploy AI support application v3",
+  "revision": {
+    "revisionType": "AppSpecContent",
+    "appSpecContent": {
+      "content": "version: 0.0\n\nResources:\n  - TargetService:\n      Type: AWS::ECS::Service\n      Properties:\n        TaskDefinition: arn:aws:ecs:us-east-1:767925118253:task-definition/ai-support-task:6\n        LoadBalancerInfo:\n          ContainerName: ai-support-container\n          ContainerPort: 5000\n        PlatformVersion: LATEST"
+    }
+  }
+}

@@ -1,0 +1,11 @@
+version: 0.0
+
+Resources:
+  - TargetService:
+      Type: AWS::ECS::Service
+      Properties:
+        TaskDefinition: arn:aws:ecs:us-east-1:767925118253:task-definition/ai-support-task:6
+        LoadBalancerInfo:
+          ContainerName: ai-support-container
+          ContainerPort: 5000
+        PlatformVersion: LATEST

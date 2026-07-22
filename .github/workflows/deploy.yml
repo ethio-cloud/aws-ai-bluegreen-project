@@ -1,0 +1,145 @@
+name: Deploy AI Support App
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: ai-support-production
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  AWS_ACCOUNT_ID: "767925118253"
+
+  ECR_REPOSITORY: ai-support-app
+
+  ECS_CLUSTER: ai-support-cluster
+  ECS_SERVICE: ai-support-bg-service
+  ECS_TASK_DEFINITION_FAMILY: ai-support-task
+  ECS_CONTAINER_NAME: ai-support-container
+
+  CODEDEPLOY_APPLICATION: ai-support-codedeploy-app
+  CODEDEPLOY_DEPLOYMENT_GROUP: ai-support-deployment-group
+
+jobs:
+  deploy:
+    name: Build and Blue-Green Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::767925118253:role/ai-support-cicd-role
+          role-session-name: GitHubActions-AISupport
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set image metadata
+        id: metadata
+        shell: bash
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          IMAGE_TAG="sha-${SHORT_SHA}"
+          APP_VERSION="v-${SHORT_SHA}"
+
+          echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+          echo "app_version=$APP_VERSION" >> "$GITHUB_OUTPUT"
+
+          echo "Image tag: $IMAGE_TAG"
+          echo "Application version: $APP_VERSION"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ steps.metadata.outputs.image_tag }}
+        shell: bash
+        run: |
+          IMAGE_URI="$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+          docker buildx build \
+            --platform linux/amd64 \
+            --tag "$IMAGE_URI" \
+            --push \
+            .
+
+          echo "image=$IMAGE_URI" >> "$GITHUB_OUTPUT"
+          echo "Successfully pushed $IMAGE_URI"
+
+      - name: Download current ECS task definition
+        shell: bash
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition "$ECS_TASK_DEFINITION_FAMILY" \
+            --region "$AWS_REGION" \
+            --query taskDefinition \
+            > task-definition-current.json
+
+          jq '
+            del(
+              .taskDefinitionArn,
+              .revision,
+              .status,
+              .requiresAttributes,
+              .compatibilities,
+              .registeredAt,
+              .registeredBy
+            )
+          ' task-definition-current.json > task-definition.json
+
+          jq empty task-definition.json
+
+      - name: Render new ECS task definition
+        id: render-task-definition
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ env.ECS_CONTAINER_NAME }}
+          image: ${{ steps.build-image.outputs.image }}
+          environment-variables: |
+            APP_VERSION=${{ steps.metadata.outputs.app_version }}
+
+      - name: Deploy through CodeDeploy
+        id: deploy
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render-task-definition.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+          wait-max-delay-seconds: 15
+          codedeploy-appspec: appspec.json
+          codedeploy-application: ${{ env.CODEDEPLOY_APPLICATION }}
+          codedeploy-deployment-group: ${{ env.CODEDEPLOY_DEPLOYMENT_GROUP }}
+
+      - name: Display deployment summary
+        if: success()
+        shell: bash
+        run: |
+          echo "Blue/green deployment completed successfully."
+          echo "Image: ${{ steps.build-image.outputs.image }}"
+          echo "Version: ${{ steps.metadata.outputs.app_version }}"
+          echo "Service: $ECS_SERVICE"
+          echo "Cluster: $ECS_CLUSTER"

@@ -1,0 +1,33 @@
+{
+  "cluster": "ai-support-cluster",
+  "serviceName": "ai-support-bg-service",
+  "taskDefinition": "arn:aws:ecs:us-east-1:767925118253:task-definition/ai-support-task:5",
+  "desiredCount": 1,
+  "launchType": "FARGATE",
+  "platformVersion": "LATEST",
+  "schedulingStrategy": "REPLICA",
+  "deploymentController": {
+    "type": "CODE_DEPLOY"
+  },
+  "networkConfiguration": {
+    "awsvpcConfiguration": {
+      "subnets": [
+        "subnet-074aa9ed93cbb41cb",
+        "subnet-0e450c23fe97de638"
+      ],
+      "securityGroups": [
+        "sg-07f8334e8979a8138"
+      ],
+      "assignPublicIp": "ENABLED"
+    }
+  },
+  "loadBalancers": [
+    {
+      "targetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:767925118253:targetgroup/ai-support-blue-tg/a1037b7a35494d2e",
+      "containerName": "ai-support-container",
+      "containerPort": 5000
+    }
+  ],
+  "healthCheckGracePeriodSeconds": 60,
+  "enableExecuteCommand": false
+}

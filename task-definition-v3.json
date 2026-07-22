@@ -1,0 +1,73 @@
+{
+  "containerDefinitions": [
+    {
+      "name": "ai-support-container",
+      "image": "767925118253.dkr.ecr.us-east-1.amazonaws.com/ai-support-app:v3",
+      "cpu": 0,
+      "portMappings": [
+        {
+          "containerPort": 5000,
+          "hostPort": 5000,
+          "protocol": "tcp",
+          "name": "ai-support-http",
+          "appProtocol": "http"
+        }
+      ],
+      "essential": true,
+      "environment": [
+        {
+          "name": "BEDROCK_MODEL_ID",
+          "value": "amazon.nova-lite-v1:0"
+        },
+        {
+          "name": "AWS_REGION",
+          "value": "us-east-1"
+        },
+        {
+          "name": "APP_VERSION",
+          "value": "v3"
+        }
+      ],
+      "environmentFiles": [],
+      "mountPoints": [],
+      "volumesFrom": [],
+      "ulimits": [],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/ai-support-app",
+          "awslogs-create-group": "true",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        },
+        "secretOptions": []
+      },
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "curl -f http://localhost:5000/health || exit 1"
+        ],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 30
+      },
+      "systemControls": []
+    }
+  ],
+  "family": "ai-support-task",
+  "taskRoleArn": "arn:aws:iam::767925118253:role/ai-support-app-task-role",
+  "executionRoleArn": "arn:aws:iam::767925118253:role/ecsTaskExecutionRole1",
+  "networkMode": "awsvpc",
+  "volumes": [],
+  "placementConstraints": [],
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "cpu": "512",
+  "memory": "1024"
+}

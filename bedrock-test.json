@@ -1,0 +1,16 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "text": "How can I reset my password?"
+        }
+      ]
+    }
+  ],
+  "inferenceConfig": {
+    "maxTokens": 200,
+    "temperature": 0.3
+  }
+}

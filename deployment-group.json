@@ -1,0 +1,58 @@
+{
+  "applicationName": "ai-support-codedeploy-app",
+  "deploymentGroupName": "ai-support-deployment-group",
+  "serviceRoleArn": "arn:aws:iam::767925118253:role/CodeDeployECSServiceRole",
+  "deploymentConfigName": "CodeDeployDefault.ECSAllAtOnce",
+  "deploymentStyle": {
+    "deploymentType": "BLUE_GREEN",
+    "deploymentOption": "WITH_TRAFFIC_CONTROL"
+  },
+  "autoRollbackConfiguration": {
+    "enabled": true,
+    "events": [
+      "DEPLOYMENT_FAILURE",
+      "DEPLOYMENT_STOP_ON_ALARM",
+      "DEPLOYMENT_STOP_ON_REQUEST"
+    ]
+  },
+  "blueGreenDeploymentConfiguration": {
+    "terminateBlueInstancesOnDeploymentSuccess": {
+      "action": "TERMINATE",
+      "terminationWaitTimeInMinutes": 5
+    },
+    "deploymentReadyOption": {
+      "actionOnTimeout": "CONTINUE_DEPLOYMENT",
+      "waitTimeInMinutes": 0
+    }
+  },
+  "ecsServices": [
+    {
+      "serviceName": "ai-support-service",
+      "clusterName": "ai-support-cluster"
+    }
+  ],
+  "loadBalancerInfo": {
+    "targetGroupPairInfoList": [
+      {
+        "targetGroups": [
+          {
+            "name": "ai-support-blue-tg"
+          },
+          {
+            "name": "ai-support-green-tg"
+          }
+        ],
+        "prodTrafficRoute": {
+          "listenerArns": [
+            "arn:aws:elasticloadbalancing:us-east-1:767925118253:listener/app/ai-support-alb/5d031a7700018e9e/57283f8a1fdf0dfa"
+          ]
+        },
+        "testTrafficRoute": {
+          "listenerArns": [
+            "arn:aws:elasticloadbalancing:us-east-1:767925118253:listener/app/ai-support-alb/5d031a7700018e9e/a6376b33c3b68cd9"
+          ]
+        }
+      }
+    ]
+  }
+}
