@@ -45,6 +45,7 @@ jobs:
           role-to-assume: arn:aws:iam::767925118253:role/ai-support-cicd-role
           role-session-name: GitHubActions-AISupport
           aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
 
       - name: Verify AWS identity
         run: aws sts get-caller-identity
