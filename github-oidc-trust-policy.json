@@ -10,7 +10,7 @@
       "Condition": {
         "StringEquals": {
           "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
-          "token.actions.githubusercontent.com:sub": "repo:ethio-cloud/aws-ai-bluegreen-project:ref:refs/heads/main"
+          "token.actions.githubusercontent.com:sub": "repo:ethio-cloud@282417272/aws-ai-bluegreen-project@1308174268:ref:refs/heads/main"
         }
       }
     }

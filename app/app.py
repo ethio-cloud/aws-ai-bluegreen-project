@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, request, jsonify, render_template
 import boto3
 import os
 
@@ -11,12 +11,8 @@ BEDROCK_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "").strip()
 
 @app.route("/")
 def home():
-    return jsonify(
-        {
-            "message": "AI Customer Support App is running",
-            "version": APP_VERSION,
-        }
-    )
+    return render_template("index.html")
+
 
 
 @app.route("/health")
